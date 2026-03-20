@@ -1,12 +1,8 @@
 import classNames from "classnames";
-import { Animator, Decoder } from "gifler";
-import { GifReader } from "omggif";
-import { RefCallback, useCallback, useRef, useState } from "react";
+import { RefCallback, useCallback, useEffect, useRef, useState } from "react";
 
 import { AspectRatioBox } from "@web-speed-hackathon-2026/client/src/components/foundation/AspectRatioBox";
 import { FontAwesomeIcon } from "@web-speed-hackathon-2026/client/src/components/foundation/FontAwesomeIcon";
-import { useFetch } from "@web-speed-hackathon-2026/client/src/hooks/use_fetch";
-import { fetchBinary } from "@web-speed-hackathon-2026/client/src/utils/fetchers";
 
 interface Props {
   src: string;
@@ -16,56 +12,158 @@ interface Props {
  * クリックすると再生・一時停止を切り替えます。
  */
 export const PausableMovie = ({ src }: Props) => {
-  const { data, isLoading } = useFetch(src, fetchBinary);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(true);
 
-  const animatorRef = useRef<Animator>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  const stopDrawing = useCallback(() => {
+    if (animationFrameRef.current !== null) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  }, []);
+
+  const drawFrame = useCallback(() => {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    if (canvas === null || video === null || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+      return;
+    }
+
+    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+    }
+
+    const context = canvas.getContext("2d");
+    if (context === null) {
+      return;
+    }
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  }, []);
+
+  const startDrawing = useCallback(() => {
+    stopDrawing();
+
+    const render = () => {
+      drawFrame();
+
+      const video = videoRef.current;
+      if (video !== null && !video.paused && !video.ended) {
+        animationFrameRef.current = window.requestAnimationFrame(render);
+      } else {
+        animationFrameRef.current = null;
+      }
+    };
+
+    animationFrameRef.current = window.requestAnimationFrame(render);
+  }, [drawFrame, stopDrawing]);
+
   const canvasCallbackRef = useCallback<RefCallback<HTMLCanvasElement>>(
     (el) => {
-      animatorRef.current?.stop();
+      canvasRef.current = el;
+      drawFrame();
+    },
+    [drawFrame],
+  );
 
-      if (el === null || data === null) {
+  useEffect(() => {
+    stopDrawing();
+
+    const previousVideo = videoRef.current;
+    if (previousVideo !== null) {
+      previousVideo.pause();
+      previousVideo.removeAttribute("src");
+      previousVideo.load();
+      videoRef.current = null;
+    }
+
+    setIsLoading(true);
+
+    const video = document.createElement("video");
+    video.preload = "auto";
+    video.playsInline = true;
+    video.loop = true;
+    video.muted = true;
+    video.src = src;
+    videoRef.current = video;
+
+    const handleLoadedData = () => {
+      if (videoRef.current !== video) {
         return;
       }
 
-      // GIF を解析する
-      const reader = new GifReader(new Uint8Array(data));
-      const frames = Decoder.decodeFramesSync(reader);
-      const animator = new Animator(reader, frames);
+      setIsLoading(false);
+      drawFrame();
 
-      animator.animateInCanvas(el);
-      animator.onFrame(frames[0]!);
-
-      // 視覚効果 off のとき GIF を自動再生しない
+      // 視覚効果 off のとき動画を自動再生しない
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         setIsPlaying(false);
-        animator.stop();
+        video.pause();
       } else {
         setIsPlaying(true);
-        animator.start();
+        void video.play().then(startDrawing).catch(() => {
+          setIsPlaying(false);
+        });
       }
+    };
 
-      animatorRef.current = animator;
-    },
-    [data],
-  );
+    const handlePlay = () => {
+      startDrawing();
+    };
 
-  const [isPlaying, setIsPlaying] = useState(true);
+    const handlePause = () => {
+      stopDrawing();
+      drawFrame();
+    };
+
+    const handleSeeked = () => {
+      drawFrame();
+    };
+
+    video.addEventListener("loadeddata", handleLoadedData);
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("pause", handlePause);
+    video.addEventListener("seeked", handleSeeked);
+
+    return () => {
+      stopDrawing();
+      if (videoRef.current === video) {
+        videoRef.current = null;
+      }
+      video.removeEventListener("loadeddata", handleLoadedData);
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
+      video.removeEventListener("seeked", handleSeeked);
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+    };
+  }, [src, drawFrame, startDrawing, stopDrawing]);
+
   const handleClick = useCallback(() => {
-    if (isLoading || data === null) {
+    const video = videoRef.current;
+    if (isLoading || video === null) {
       return;
     }
 
     setIsPlaying((isPlaying) => {
       if (isPlaying) {
-        animatorRef.current?.stop();
+        video.pause();
       } else {
-        animatorRef.current?.start();
+        void video.play().then(startDrawing).catch(() => {
+          setIsPlaying(false);
+        });
       }
       return !isPlaying;
     });
-  }, [isLoading, data]);
+  }, [isLoading, startDrawing]);
 
-  const hasMovie = !isLoading && data !== null;
+  const hasMovie = !isLoading && videoRef.current !== null;
 
   return (
     <AspectRatioBox aspectHeight={1} aspectWidth={1}>
