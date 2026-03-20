@@ -1,11 +1,10 @@
-import { MagickFormat } from "@imagemagick/magick-wasm";
 import { ChangeEventHandler, FormEventHandler, useCallback, useState } from "react";
 
 import { FontAwesomeIcon } from "@web-speed-hackathon-2026/client/src/components/foundation/FontAwesomeIcon";
 import { ModalErrorMessage } from "@web-speed-hackathon-2026/client/src/components/modal/ModalErrorMessage";
 import { ModalSubmitButton } from "@web-speed-hackathon-2026/client/src/components/modal/ModalSubmitButton";
 import { AttachFileInputButton } from "@web-speed-hackathon-2026/client/src/components/new_post_modal/AttachFileInputButton";
-import { convertImage } from "@web-speed-hackathon-2026/client/src/utils/convert_image";
+import { convertImage, MagickFormat } from "@web-speed-hackathon-2026/client/src/utils/convert_image";
 import { convertMovie } from "@web-speed-hackathon-2026/client/src/utils/convert_movie";
 import { convertSound } from "@web-speed-hackathon-2026/client/src/utils/convert_sound";
 
