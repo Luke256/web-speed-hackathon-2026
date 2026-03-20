@@ -12,6 +12,23 @@ interface Props {
   src: string;
 }
 
+function arrayBufferToBinaryString(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let result = "";
+
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    result += String.fromCharCode(...chunk);
+  }
+
+  return result;
+}
+
+function latin1StringToUint8Array(value: string): Uint8Array {
+  return Uint8Array.from(value, (char) => char.charCodeAt(0));
+}
+
 /**
  * アスペクト比を維持したまま、要素のコンテンツボックス全体を埋めるように画像を拡大縮小します
  */
@@ -25,13 +42,13 @@ export const CoveredImage = ({ src }: Props) => {
   const { data, isLoading } = useFetch(src, fetchBinary);
 
   const imageSize = useMemo(() => {
-    return data != null ? sizeOf(Buffer.from(data)) : { height: 0, width: 0 };
+    return data != null ? sizeOf(new Uint8Array(data)) : { height: 0, width: 0 };
   }, [data]);
 
   const alt = useMemo(() => {
-    const exif = data != null ? load(Buffer.from(data).toString("binary")) : null;
+    const exif = data != null ? load(arrayBufferToBinaryString(data)) : null;
     const raw = exif?.["0th"]?.[ImageIFD.ImageDescription];
-    return raw != null ? new TextDecoder().decode(Buffer.from(raw, "binary")) : "";
+    return typeof raw === "string" ? new TextDecoder().decode(latin1StringToUint8Array(raw)) : "";
   }, [data]);
 
   const blobUrl = useMemo(() => {
