@@ -29,7 +29,6 @@ const config = {
   devtool: false,
   entry: {
     main: [
-      "jquery-binarytransport",
       path.resolve(SRC_PATH, "./index.css"),
       path.resolve(SRC_PATH, "./buildinfo.ts"),
       path.resolve(SRC_PATH, "./index.tsx"),
@@ -66,10 +65,8 @@ const config = {
   },
   plugins: [
     new webpack.ProvidePlugin({
-      $: "jquery",
       AudioContext: ["standardized-audio-context", "AudioContext"],
       Buffer: ["buffer", "Buffer"],
-      "window.jQuery": "jquery",
     }),
     new webpack.EnvironmentPlugin({
       BUILD_DATE: new Date().toISOString(),
@@ -89,7 +86,7 @@ const config = {
       ],
     }),
     new HtmlWebpackPlugin({
-      inject: false,
+      inject: "body",
       template: path.resolve(SRC_PATH, "./index.html"),
     }),
     new BundleAnalyzerPlugin({
@@ -133,7 +130,17 @@ const config = {
   optimization: {
     minimize: true,
     splitChunks: {
-      chunks: "async",
+      chunks: "all",
+      cacheGroups: {
+        reactVendor: {
+          // Keep React runtime out of main.js so app code can be cached independently.
+          test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+          name: "react-vendor",
+          chunks: "all",
+          priority: 30,
+          enforce: true,
+        },
+      },
     },
     concatenateModules: true,
     usedExports: true,

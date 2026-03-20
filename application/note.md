@@ -24,3 +24,8 @@ Webpack Bundle Analyzerでバンドルを分析。
 デプロイと手元とでmain.jsのサイズは違うし、アセットのサイズも違う
 
 ## 2. 画像でかすぎ問題
+512pxくらいにして保存。
+
+## 6. バンドル設定 その2
+loadash, jqueryを削除
+また、react-domも分離して、main.jsを15.42KBに
