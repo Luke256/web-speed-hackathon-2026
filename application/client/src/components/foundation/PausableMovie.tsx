@@ -61,8 +61,20 @@ export const PausableMovie = ({ src }: Props) => {
     });
   }, []);
 
-  if (isLoading || data === null) {
-    return null;
+  if (isLoading) {
+    return (
+      <AspectRatioBox aspectHeight={1} aspectWidth={1}>
+        <div className="bg-cax-surface-subtle h-full w-full animate-pulse" />
+      </AspectRatioBox>
+    );
+  }
+
+  if (data === null) {
+    return (
+      <AspectRatioBox aspectHeight={1} aspectWidth={1}>
+        <div className="bg-cax-surface-subtle h-full w-full" />
+      </AspectRatioBox>
+    );
   }
 
   return (

@@ -46,8 +46,11 @@ export const CoveredImage = ({ src }: Props) => {
     });
   }, []);
 
-  if (isLoading || data === null || blobUrl === null) {
-    return null;
+  if (isLoading) {
+    return <div className="bg-cax-surface-subtle h-full w-full animate-pulse" />;
+  }
+  if (data === null || blobUrl === null) {
+    return <div className="bg-cax-surface-subtle h-full w-full" />;
   }
 
   const containerRatio = containerSize.height / containerSize.width;
