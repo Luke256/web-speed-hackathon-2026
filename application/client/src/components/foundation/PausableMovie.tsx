@@ -63,7 +63,7 @@ export const PausableMovie = ({ src }: Props) => {
       }
       return !isPlaying;
     });
-  }, []);
+  }, [isLoading, data]);
 
   const hasMovie = !isLoading && data !== null;
 
