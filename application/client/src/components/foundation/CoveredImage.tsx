@@ -86,6 +86,7 @@ export const CoveredImage = ({ src }: Props) => {
           },
         )}
         src={hasImage ? blobUrl : undefined}
+        loading="lazy"
       />
 
       <button
