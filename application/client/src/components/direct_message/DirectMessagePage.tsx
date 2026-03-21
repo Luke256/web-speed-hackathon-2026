@@ -120,7 +120,7 @@ export const DirectMessagePage = ({
 
         <ul className="grid gap-3" data-testid="dm-message-list">
           {conversation.messages.map((message) => {
-            const isActiveUserSend = message.sender.id === activeUser.id;
+            const isActiveUserSend = message.senderId === activeUser.id;
 
             return (
               <li
